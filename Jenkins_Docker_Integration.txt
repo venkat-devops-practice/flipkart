@@ -1,0 +1,96 @@
+pipeline{
+
+agent any
+
+tools{
+ maven "maven3.8.4"
+}
+stages{
+
+  stage('CheckOutCode')
+  {
+    steps{
+    git branch: 'master', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
+	}
+  }
+  stage('Build'){
+    steps{
+	sh "mvn clean package"
+	}
+  }
+  stage('Build Docker Image'){
+    steps{
+	sh "docker build -t sravanidockerhub/maven-web-application:1 ."
+	}
+  }
+  stage('Docker login and push'){
+    steps{
+    withCredentials([string(credentialsId: 'DockerHubPwd', variable: 'DockerHubPwd')]) {
+    sh "docker login -u sravanidockerhub -p ${DockerHubPwd}"
+    sh "docker push sravanidockerhub/maven-web-application:1"
+    }
+	}
+   }
+   stage('Deploy Application into container'){
+    steps{
+        sshagent(['Docker_Deployment_Server_SSH']) {
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.40.100 docker rm -f mavenwebapp || true"
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.40.100 docker run -d --name mavenwebapp -p 8080:8080 sravanidockerhub/maven-web-application:1"
+        }	
+	}
+   }
+  }
+}
+
+
+
+
+
+
+
+pipeline{
+
+agent any
+
+tools{
+ maven "maven3.8.4"
+}
+stages{
+
+  stage('CheckOutCode')
+  {
+    steps{
+        withCredentials([string(credentialsId: 'GitHubPWD', variable: 'githubpwd')]) {
+     git branch: 'master', url: 'https://github.com/sravani-venkat/maven-web-application.git'
+    }
+   
+	}
+  }
+  stage('Build'){
+    steps{
+	sh "mvn clean package"
+	}
+  }
+  stage('Build Docker Image'){
+    steps{
+	sh "docker build -t sravanidockerhub/maven-web-application:1 ."
+	}
+  }
+  stage('Docker login and push'){
+    steps{
+    withCredentials([string(credentialsId: 'DockerHubPwd', variable: 'DockerHubPwd')]) {
+    sh "docker login -u sravanidockerhub -p ${DockerHubPwd}"
+    sh "docker push sravanidockerhub/maven-web-application:1"
+    }
+	}
+   }
+   stage('Deploy Application into container'){
+    steps{
+        sshagent(['Docker_Deployment_Server_SSH']) {
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.40.100 docker rm -f mavenwebapp || true"
+        sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.40.100 docker run -d --name mavenwebapp -p 8080:8080 sravanidockerhub/maven-web-application:1"
+        }	
+	}
+   }
+  }
+}
